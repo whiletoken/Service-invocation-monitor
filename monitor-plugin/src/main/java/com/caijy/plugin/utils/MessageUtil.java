@@ -1,36 +1,41 @@
 package com.caijy.plugin.utils;
 
 import com.intellij.notification.Notification;
-import com.intellij.notification.NotificationDisplayType;
 import com.intellij.notification.NotificationGroup;
+import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
 
 /**
- * @Description
- * 右下角的吐司提示
- * @Date 2020/8/28
- * @Created by fangla
+ * @Description 右下角通知提示，适配现代与最新 IntelliJ 平台
  */
 public class MessageUtil {
-    private static NotificationGroup notificationGroup;
-
-    static {
-        notificationGroup = new NotificationGroup("Java2Json.NotificationGroup", NotificationDisplayType.BALLOON, true);
-    }
+    public static final String GROUP_ID = "Service Invocation Monitor";
 
     public static void info(String message) {
-        Notification info = notificationGroup.createNotification(message, NotificationType.INFORMATION);
-        Notifications.Bus.notify(info, null);
+        notify(message, NotificationType.INFORMATION);
     }
 
     public static void error(String message) {
-        Notification error = notificationGroup.createNotification(message, NotificationType.ERROR);
-        Notifications.Bus.notify(error, null);
+        notify(message, NotificationType.ERROR);
     }
 
     public static void warn(String message) {
-        Notification warn = notificationGroup.createNotification(message, NotificationType.WARNING);
-        Notifications.Bus.notify(warn, null);
+        notify(message, NotificationType.WARNING);
+    }
+
+    private static void notify(String message, NotificationType type) {
+        try {
+            NotificationGroup group = NotificationGroupManager.getInstance().getNotificationGroup(GROUP_ID);
+            if (group != null) {
+                group.createNotification(message, type).notify(null);
+                return;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            new Notification(GROUP_ID, "Service Invocation Monitor", message, type).notify(null);
+        } catch (Throwable ignored) {
+        }
     }
 }

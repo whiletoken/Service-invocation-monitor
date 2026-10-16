@@ -38,8 +38,12 @@ public class ToolsConfiguration implements Configurable {
     private JButton commandBtn;
 
     public ToolsConfiguration() {
+    }
+
+    private void initComponent() {
         int row = 18;
         jPanel = new JPanel(new GridLayout(row, column));
+        textFieldList.clear();
 
         Commandinitializer.DEFAULT_COMMANDS_KV.entrySet().stream().forEach(entry -> {
             // 拿到各个命令的展示信息
@@ -112,12 +116,59 @@ public class ToolsConfiguration implements Configurable {
 
     @Override
     public @Nullable JComponent createComponent() {
+        if (jPanel == null) {
+            initComponent();
+        }
         return jPanel;
     }
 
     @Override
+    public void reset() {
+        if (jPanel == null) {
+            return;
+        }
+        String savedThreshold = ToolsSetting.getInstance().timeCostThreshold;
+        String savedSampleRate = ToolsSetting.getInstance().sampleRate;
+        for (int i = 0; i < textFieldList.size() && i < Commandinitializer.DEFAULT_COMMANDS.size(); i++) {
+            JTextField textField = textFieldList.get(i);
+            String command = Commandinitializer.DEFAULT_COMMANDS.get(i);
+            if (command.contains(AgentConstant.MONITOR_TIME_COST_THRESHOLD)) {
+                textField.setText(StringUtils.isNotBlank(savedThreshold) ? savedThreshold : String.valueOf(Commandinitializer.DEFAULT_VALUE_TIME_COST_THRESHOLD));
+            } else if (command.contains(AgentConstant.MONITOR_SAMPLE_RATE)) {
+                textField.setText(StringUtils.isNotBlank(savedSampleRate) ? savedSampleRate : String.valueOf(Commandinitializer.DEFAULT_VALUE_SAMPLE_RATE));
+            }
+        }
+    }
+
+    @Override
+    public void disposeUIResources() {
+        jPanel = null;
+        textFieldList.clear();
+        jLabel = null;
+        commandBtn = null;
+    }
+
+    @Override
     public boolean isModified() {
-        return true;
+        String savedThreshold = ToolsSetting.getInstance().timeCostThreshold;
+        String savedSampleRate = ToolsSetting.getInstance().sampleRate;
+        for (int i = 0; i < textFieldList.size() && i < Commandinitializer.DEFAULT_COMMANDS.size(); i++) {
+            JTextField textField = textFieldList.get(i);
+            String text = textField.getText();
+            String command = Commandinitializer.DEFAULT_COMMANDS.get(i);
+            if (command.contains(AgentConstant.MONITOR_TIME_COST_THRESHOLD)) {
+                String current = StringUtils.isNotBlank(savedThreshold) ? savedThreshold : String.valueOf(Commandinitializer.DEFAULT_VALUE_TIME_COST_THRESHOLD);
+                if (!java.util.Objects.equals(text, current)) {
+                    return true;
+                }
+            } else if (command.contains(AgentConstant.MONITOR_SAMPLE_RATE)) {
+                String current = StringUtils.isNotBlank(savedSampleRate) ? savedSampleRate : String.valueOf(Commandinitializer.DEFAULT_VALUE_SAMPLE_RATE);
+                if (!java.util.Objects.equals(text, current)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override

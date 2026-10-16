@@ -1,4 +1,4 @@
-package com.caijy.plugin.utils;
+﻿package com.caijy.plugin.utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +11,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaPsiFacade;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiField;
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiJavaFile;
 import com.intellij.psi.PsiMethod;
-import com.intellij.psi.impl.source.PsiClassImpl;
-import com.intellij.psi.impl.source.PsiJavaFileImpl;
 import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.javadoc.PsiDocTag;
 import com.intellij.psi.search.GlobalSearchScope;
@@ -193,10 +193,15 @@ public class DesUtil {
                         }
                     }
                 }
-                if(Objects.isNull(psiClassLink)){
-                    //如果是同包情况
-                    linkAddress= ((PsiJavaFileImpl) ((PsiClassImpl) field.getParent()).getContext()).getPackageName()+"."+linkAddress;
-                    psiClassLink= JavaPsiFacade.getInstance(project).findClass(linkAddress, GlobalSearchScope.allScope(project));
+                if (Objects.isNull(psiClassLink)) {
+                    // 如果是同包情况
+                    if (field.getParent() instanceof PsiClass) {
+                        PsiFile containingFile = ((PsiClass) field.getParent()).getContainingFile();
+                        if (containingFile instanceof PsiJavaFile) {
+                            linkAddress = ((PsiJavaFile) containingFile).getPackageName() + "." + linkAddress;
+                            psiClassLink = JavaPsiFacade.getInstance(project).findClass(linkAddress, GlobalSearchScope.allScope(project));
+                        }
+                    }
                 }
                 //如果小于等于一为不存在import，不做处理
             }
@@ -266,7 +271,8 @@ public class DesUtil {
                    }
                    if (Objects.isNull(psiClassLink)) {
                        //如果是同包情况
-                       linkAddress = ((PsiJavaFileImpl) ((PsiClassImpl) field.getParent()).getContext()).getPackageName() + "." + linkAddress;
+                       PsiFile containingFile = (field.getParent() instanceof PsiClass) ? ((PsiClass) field.getParent()).getContainingFile() : null;
+                        linkAddress = (containingFile instanceof PsiJavaFile ? ((PsiJavaFile) containingFile).getPackageName() : "") + "." + linkAddress;
                        psiClassLink = JavaPsiFacade.getInstance(project).findClass(linkAddress, GlobalSearchScope.allScope(project));
                        if (Objects.nonNull(psiClassLink)) {
                            result.add(psiClassLink);

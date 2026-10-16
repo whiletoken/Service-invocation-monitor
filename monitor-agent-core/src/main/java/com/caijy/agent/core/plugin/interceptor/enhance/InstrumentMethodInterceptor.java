@@ -45,18 +45,16 @@ public class InstrumentMethodInterceptor {
         Object call = null;
         try {
             call = callable.call();
-        } catch (Throwable e) {
-            throw e;
-        }
-
-        try {
-            interceptor.afterMethod(obj, clazz, method, allArguments, method.getParameterTypes());
-        } catch (Throwable e) {
-            log.error(
-                    "Service Invocation Monitor | after method invoke An Error occurred! from interceptor:{},"
-                            + "reason:{}",
-                    interceptor.getClass().getSimpleName(), e
-                            .getMessage(), e);
+        } finally {
+            try {
+                interceptor.afterMethod(obj, clazz, method, allArguments, method.getParameterTypes());
+            } catch (Throwable e) {
+                log.error(
+                        "Service Invocation Monitor | after method invoke An Error occurred! from interceptor:{},"
+                                + "reason:{}",
+                        interceptor.getClass().getSimpleName(), e
+                                .getMessage(), e);
+            }
         }
         return call;
     }

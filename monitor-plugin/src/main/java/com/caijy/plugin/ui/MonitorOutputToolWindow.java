@@ -1,65 +1,80 @@
 package com.caijy.plugin.ui;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 
-import com.caijy.plugin.utils.PluginUtil;
 import com.intellij.execution.filters.TextConsoleBuilder;
 import com.intellij.execution.filters.TextConsoleBuilderFactory;
 import com.intellij.execution.ui.ConsoleView;
+import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.ui.content.Content;
+import com.intellij.ui.content.ContentFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * @author liguang
  * @date 2022/12/7 星期三 8:18 下午
  */
-public class MonitorOutputToolWindow implements ToolWindowFactory {
-    private static final Map<Project, ConsoleView> consoleViews = new HashMap<>();
-
-    private static final ScheduledThreadPoolExecutor schedule = new ScheduledThreadPoolExecutor(1);
-
-    public static ToolWindow toolWindow;
+public class MonitorOutputToolWindow implements ToolWindowFactory, DumbAware {
+    private static final Map<Project, ConsoleView> consoleViews = new ConcurrentHashMap<>();
 
     public static final String ID = "Monitor";
 
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        if (consoleViews.get(project) == null) {
+        ConsoleView consoleView = consoleViews.get(project);
+        if (consoleView == null) {
             createToolWindow(project, toolWindow);
         }
-        MonitorOutputToolWindow.toolWindow = toolWindow;
-        MonitorOutputToolWindow.toolWindow.activate(null, false);
+        toolWindow.activate(null, false);
     }
 
     // 为了方便其他地方使用 ConsoleView ，定义该方法获取 ConsoleView
     // ConsoleView 对象通过其 print 方法，向自定义的控制台窗口输出文本内容
     public static ConsoleView getConsoleView(Project project) {
-        // 创建过了就不再重复创建了
-        if (consoleViews.get(project) == null) {
-            ToolWindow toolWindow = getToolWindow(project);
-            createToolWindow(project, toolWindow);
+        if (project == null || project.isDisposed()) {
+            return null;
         }
-        return consoleViews.get(project);
+        // 创建过了就不再重复创建了
+        ConsoleView consoleView = consoleViews.get(project);
+        if (consoleView == null) {
+            ToolWindow toolWindow = getToolWindow(project);
+            if (toolWindow != null) {
+                consoleView = createToolWindow(project, toolWindow);
+            }
+        }
+        return consoleView;
     }
 
     // 设置工具栏窗口显示的 UI 为控制台窗口视图
-    private static void createToolWindow(Project project, ToolWindow toolWindow) {
+    private static synchronized ConsoleView createToolWindow(Project project, ToolWindow toolWindow) {
+        ConsoleView existing = consoleViews.get(project);
+        if (existing != null) {
+            return existing;
+        }
         TextConsoleBuilder builder = TextConsoleBuilderFactory.getInstance().createBuilder(project);
         ConsoleView consoleView = builder.getConsole();
         consoleViews.put(project, consoleView);
-        Content content = toolWindow.getContentManager().getFactory().createContent(consoleView.getComponent(),
+
+        // 注册到项目生命周期，当 Project 关闭时自动释放 ConsoleView，防止 IDEA 报告 Project 内存泄露
+        Disposer.register(project, () -> {
+            consoleViews.remove(project);
+            Disposer.dispose(consoleView);
+        });
+
+        ContentFactory contentFactory = ContentFactory.getInstance();
+        Content content = contentFactory.createContent(consoleView.getComponent(),
             "Monitor Console Output", false);
-        toolWindow.getContentManager().addContent(content);
         content.getComponent().setVisible(true);
-        content.setCloseable(true);
+        content.setCloseable(false);
         toolWindow.getContentManager().addContent(content);
+
+        return consoleView;
     }
 
     public static ToolWindow getToolWindow(@NotNull Project project) {

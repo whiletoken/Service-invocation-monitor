@@ -1,51 +1,51 @@
 plugins {
     id 'java'
-    id 'org.jetbrains.intellij' version '1.3.1'
+    id 'org.jetbrains.intellij.platform' version '2.19.0'
 }
 
-group 'com.caijy.plugin'
-version "$rootProject.ext.plugin.version"
-apply plugin: 'java'
-sourceCompatibility = 1.8
+group = 'com.caijy.plugin'
+version = "$rootProject.ext.plugin.version"
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
 jar.enabled = true
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 dependencies {
     implementation project(":monitor-agent-core")
+    intellijPlatform {
+        intellijIdea("2026.2.3")
+        bundledPlugin("com.intellij.java")
+    }
 }
 
-// See https://github.com/JetBrains/gradle-intellij-plugin/
-intellij {
-    version = '2021.1.3'
-    plugins = ['java']
-    type.set("IU")
-    localPath.set("/Applications/IntelliJ IDEA.app")
-    tasks {
-        "buildSearchableOptions" {
-            enabled = false
+// IntelliJ Platform Gradle Plugin (2.x) configuration
+intellijPlatform {
+    pluginConfiguration {
+        ideaVersion {
+            sinceBuild = "261"
+            untilBuild = provider { null }
         }
     }
-}
-
-patchPluginXml {
-    patchPluginXml {
-        sinceBuild.set("201.1")
-        untilBuild.set("")
+    publishing {
+        token = providers.environmentVariable("pluginToken")
     }
+    buildSearchableOptions = false
 }
 
-publishPlugin{
-    token=System.getenv("pluginToken")
-}
-
-runIde {
+tasks.named('runIde') {
     jvmArgs '--add-exports', 'java.base/jdk.internal.vm=ALL-UNNAMED'
 }
 
-
-task packIdeaPlugin(type: Copy, dependsOn: build) {
-
+tasks.register('packIdeaPlugin', Copy) {
+    dependsOn tasks.named('buildPlugin')
 }

@@ -36,17 +36,20 @@ public class MvcAnnotationInterceptor implements MethodAroundInterceptorV1 {
     }
 
     private String getControllerURL(Class<?> clazz, Method method) {
-        String[] prePaths = clazz.getDeclaredAnnotation(RequestMapping.class).value();
         String prefix = "";
-        if (prePaths != null && prePaths.length > 0) {
-            prefix = prePaths[0];
+        RequestMapping requestMapping = AnnotationUtils.findAnnotation(clazz, RequestMapping.class);
+        if (requestMapping != null) {
+            String[] prePaths = requestMapping.value().length > 0 ? requestMapping.value() : requestMapping.path();
+            if (prePaths != null && prePaths.length > 0) {
+                prefix = prePaths[0];
+            }
         }
         String methodType = this.getAcceptedMethodTypes(method);
         String methodUrl = this.getRequestURL(method);
         if (StringUtils.isEmpty(methodType) && StringUtils.isEmpty(methodUrl)) {
             return "";
         }
-        return methodType + " " + prefix + methodUrl;
+        return (methodType != null ? methodType : "") + " " + prefix + (methodUrl != null ? methodUrl : "");
     }
 
     private String getRequestURL(Method method) {

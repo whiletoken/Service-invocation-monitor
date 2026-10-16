@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>com.caijy.plugin</id>
-    <vendor url="https://blog.caijy.top/" email="XiaoBaiCai5811@163.com"/>
     <name>Service Invocation Monitor</name>
+    <vendor url="https://blog.caijy.top/" email="XiaoBaiCai5811@163.com">小白菜</vendor>
     <description><![CDATA[
         This is a lightweight Idea plug-in that monitors the link calls of Junit and SpringBoot applications and counts the time spent on interface methods with zero intrusion. It helps developers see the timing of the call chain more visually when debugging code, and optimizes performance ahead of time.
         <br/>
@@ -13,9 +13,24 @@
         <br/>插件地址：<a href="https://github.com/caijianying/Service-invocation-monitor">https://github.com/caijianying/Service-invocation-monitor</a>
         <br/>演示项目地址：<a href="https://github.com/caijianying/Service-invocation-monitor-demo">https://github.com/caijianying/Service-invocation-monitor-demo</a>
         ]]></description>
-    <vendor>小白菜</vendor>
 
     <change-notes><![CDATA[
+        <h3>V20261016 (Latest Optimization & Modern Platform Upgrade)</h3>
+        <ul>
+            <li>Build System: Upgraded to modern IntelliJ Platform Gradle Plugin 2.x (org.jetbrains.intellij.platform 2.19.0) with official 2026.2.3 SDK</li>
+            <li>API Modernization: Implemented ActionUpdateThread.BGT in MonitorOutPutWindowAction to prevent UI freezes</li>
+            <li>API Modernization: Implemented DumbAware on tool windows and actions for seamless responsiveness during indexing</li>
+            <li>Performance: Optimized trace tree building from O(N^2) to O(N) by parentSpanId grouping</li>
+            <li>Performance: Replaced full-file log reading with incremental byte-offset reading to avoid UI freezes</li>
+            <li>Performance: Cached agent jar path and upgraded method filter lookups to O(1) Sets</li>
+            <li>Security: Replaced shared static activeSpanIdMap with per-trace concurrent collections and per-thread Deque</li>
+            <li>Security: Fixed method exception leak via try-finally cleanup in bytecode interceptors</li>
+            <li>Security: Sanitized projectCode in FileCache to protect against path traversal (CWE-22)</li>
+            <li>Compatibility: Compatible with latest IntelliJ IDEA (2026.x) using modern ContentFactory and ToolWindowManagerListener</li>
+            <li>Compatibility: Fixed Project memory leak via Disposer registration and fixed duplicate addContent</li>
+            <li>Compatibility: Restored sampleRate in ToolsSetting.loadState and fixed ToolsConfiguration.isModified()</li>
+        </ul>
+
         <h3>V20240301</h3>
         <ul>
             <li>fix some bugs</li>
@@ -156,10 +171,11 @@
     <!-- please see https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html
          on how to target different products -->
     <depends>com.intellij.modules.platform</depends>
-    <depends>com.intellij.java</depends>
+    <depends>com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
+        <notificationGroup id="Service Invocation Monitor" displayType="BALLOON"/>
         <java.programPatcher implementation="com.caijy.plugin.patcher.AgentPatcher"/>
         <applicationConfigurable parentId="tools" instance="com.caijy.plugin.config.ToolsConfiguration"
                                  id="com.caijy.plugin.config.ToolsConfiguration"
@@ -183,6 +199,6 @@
     <!--suppress PluginXmlValidity -->
     <projectListeners>
         <listener class="com.caijy.plugin.listener.MonitorOutPutToolWindowListener"
-                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
+                  topic="com.intellij.openapi.wm.ToolWindowManagerListener"/>
     </projectListeners>
 </idea-plugin>

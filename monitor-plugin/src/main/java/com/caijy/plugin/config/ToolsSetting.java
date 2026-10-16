@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
  * @author liguang
  * @date 2022/10/11 星期二 9:02 下午
  */
+@Service(Service.Level.APP)
 @State(name = PluginAgentConstant.PLUGIN_NAME, storages = {@Storage(value = "monitor-tools-setting.xml")})
 public class ToolsSetting implements PersistentStateComponent<ToolsSetting> {
 
@@ -28,5 +29,6 @@ public class ToolsSetting implements PersistentStateComponent<ToolsSetting> {
     @Override
     public void loadState(@NotNull ToolsSetting toolsSetting) {
         this.timeCostThreshold = toolsSetting.timeCostThreshold;
+        this.sampleRate = toolsSetting.sampleRate;
     }
 }

@@ -1,8 +1,9 @@
 package com.caijy.agent.core.constants;
 
-import java.util.List;
-
-import com.google.common.collect.Lists;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author liguang
@@ -10,11 +11,11 @@ import com.google.common.collect.Lists;
  */
 public interface ClassFilterConstants {
 
-    List<String> MYBATIS_PLUS_IGNORED_METHODS = Lists.newArrayList(
+    Set<String> MYBATIS_PLUS_IGNORED_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         "getBaseMapper", "lambdaUpdate", "lambdaQuery"
-    );
+    )));
 
-    List<String> JDK_IGNORED_METHODS = Lists.newArrayList(
-        "toString", "hashCode", "equals"
-    );
+    Set<String> JDK_IGNORED_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "toString", "hashCode", "equals", "getClass", "clone", "notify", "notifyAll", "wait"
+    )));
 }

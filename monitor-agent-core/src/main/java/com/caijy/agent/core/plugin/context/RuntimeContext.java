@@ -1,15 +1,12 @@
 package com.caijy.agent.core.plugin.context;
 
-import cn.hutool.json.JSONUtil;
 import com.caijy.agent.core.MonitorException;
 import com.caijy.agent.core.model.TraceSegment;
-import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * @author liguang
@@ -18,28 +15,32 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RuntimeContext {
     private final ThreadLocal<RuntimeContext> contextThreadLocal;
-    private Map<String, Object> contextMap = new ConcurrentHashMap<>();
+    private final Map<String, Object> contextMap = new ConcurrentHashMap<>();
     /**
-     * k-> traceId v-> traceModels
+     * k-> traceId v-> traceModels (线程安全集合)
      **/
-    private static Map<String, List<TraceModel>> traceModelsMap = new ConcurrentHashMap<>();
-
-    private static final ThreadLocal<String> LOCAL_TRACE_ID = new ThreadLocal<>();
-
-    private static final ThreadLocal<String> LOCAL_SPAN_ID = new ThreadLocal<>();
+    private static final Map<String, List<TraceModel>> traceModelsMap = new ConcurrentHashMap<>();
 
     public static TraceSegment getTraceSegment(String traceId) {
         List<TraceModel> traceInfos = getTraceInfos(traceId);
-//        log.debug("getTraceSegment>>: {}", JSONUtil.toJsonStr(traceInfos));
         try {
             TraceModel bannerModel = new TraceModel();
             bannerModel.setName("Service Invocation Monitor | Result ");
             bannerModel.setSpanId("0");
             bannerModel.setCostTime(0L);
-            traceInfos.add(bannerModel);
-            TraceSegment rootSegment = fillingEachSegment(bannerModel, 0, traceInfos);
-//            log.debug("rootSegment:{}", JSONUtil.toJsonStr(rootSegment));
-            return rootSegment;
+
+            // 预先建立 parentSpanId -> children 索引，将构建树复杂度从 O(N^2) 降至 O(N)
+            Map<String, List<TraceModel>> childrenByParent = new HashMap<>();
+            synchronized (traceInfos) {
+                traceInfos.add(bannerModel);
+                for (TraceModel m : traceInfos) {
+                    if (m.getParentSpanId() != null) {
+                        childrenByParent.computeIfAbsent(m.getParentSpanId(), k -> new ArrayList<>()).add(m);
+                    }
+                }
+            }
+
+            return fillingEachSegment(bannerModel, 0, childrenByParent);
         } catch (Throwable ex) {
             MonitorException.error(RuntimeContext.class, ex);
         } finally {
@@ -48,7 +49,7 @@ public class RuntimeContext {
         return null;
     }
 
-    private static TraceSegment fillingEachSegment(TraceModel model, int depth, List<TraceModel> traceModels) {
+    private static TraceSegment fillingEachSegment(TraceModel model, int depth, Map<String, List<TraceModel>> childrenByParent) {
         TraceSegment segment = new TraceSegment();
         segment.setComponentName(model.getComponent());
         segment.setCostTime(model.getCostTime() == null ? null : model.getCostTime().toString());
@@ -57,9 +58,12 @@ public class RuntimeContext {
         segment.setExitTimeStamp(model.getEnd());
         segment.setDepth(depth);
         String spanId = model.getSpanId();
-        List<TraceModel> models = traceModels.stream().filter(child -> spanId.equals(child.getParentSpanId())).collect(Collectors.toList());
-        if (models != null) {
-            List<TraceSegment> children = models.stream().map(m -> fillingEachSegment(m, depth + 1, traceModels)).collect(Collectors.toList());
+        List<TraceModel> models = childrenByParent.get(spanId);
+        if (models != null && !models.isEmpty()) {
+            List<TraceSegment> children = new LinkedList<>();
+            for (TraceModel child : models) {
+                children.add(fillingEachSegment(child, depth + 1, childrenByParent));
+            }
             segment.setChildren(new LinkedList<>(children));
         }
         return segment;
@@ -84,33 +88,30 @@ public class RuntimeContext {
 
     private static List<TraceModel> getTraceInfos(String traceId) {
         if (traceId == null) {
-            return Lists.newArrayList();
+            return Collections.synchronizedList(new ArrayList<>());
         }
-        List<TraceModel> traceModels = traceModelsMap.get(traceId);
-        if (traceModels == null) {
-            traceModels = new ArrayList<>();
-            traceModelsMap.put(traceId, traceModels);
-        }
-//        log.debug("getTraceInfos >>: {} ", JSONUtil.toJsonStr(traceModelsMap));
-        return traceModels;
+        return traceModelsMap.computeIfAbsent(traceId, k -> Collections.synchronizedList(new ArrayList<>()));
     }
-
 
     public static void exit(String traceId, String spanId) {
         if (traceId != null && spanId != null) {
             long end = System.currentTimeMillis();
             List<TraceModel> traceInfos = getTraceInfos(traceId);
-            for (TraceModel m : traceInfos) {
-                if (m.getSpanId().equals(spanId)) {
-                    m.end(end).calcCostTime();
-                    break;
+            synchronized (traceInfos) {
+                for (TraceModel m : traceInfos) {
+                    if (spanId.equals(m.getSpanId())) {
+                        m.end(end).calcCostTime();
+                        break;
+                    }
                 }
             }
         }
     }
 
     public static void clearTrace(String traceId) {
-        traceModelsMap.remove(traceId);
+        if (traceId != null) {
+            traceModelsMap.remove(traceId);
+        }
     }
 
     @Data
@@ -141,7 +142,7 @@ public class RuntimeContext {
         }
 
         private void calcCostTime() {
-            this.costTime = end - start;
+            this.costTime = (end != null && start != null) ? (end - start) : 0L;
         }
     }
 }

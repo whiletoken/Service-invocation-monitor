@@ -21,10 +21,10 @@ ext {
             "spring-web"     : 'org.springframework:spring-web:5.2.4.RELEASE',
             "slf4j"          : 'org.slf4j:slf4j-api:1.7.36',
             "lombok"         : 'org.projectlombok:lombok:1.18.2',
-            "fastjson"       : 'com.alibaba:fastjson:1.2.79',
-            "javassist"      : 'javassist:javassist:3.12.1.GA',
+            "fastjson"       : 'com.alibaba:fastjson:1.2.83',
+            "javassist"      : 'org.javassist:javassist:3.30.2-GA',
             "byte-buddy"      : 'net.bytebuddy:byte-buddy:1.12.6',
             "byte-buddy-agent": 'net.bytebuddy:byte-buddy-agent:1.12.6',
-            "junit"          : 'junit:junit:4.12'
+            "junit"          : 'junit:junit:4.13.2'
     ]
 }

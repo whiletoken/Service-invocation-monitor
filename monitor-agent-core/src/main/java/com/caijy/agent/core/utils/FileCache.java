@@ -25,6 +25,9 @@ public class FileCache {
      * @date 2022/12/15 3:38 下午
      **/
     public static void appendLines(String agentJarPath, String projectCode, List<TraceConsoleDTO> consoleDTOList) {
+        if (consoleDTOList == null || consoleDTOList.isEmpty()) {
+            return;
+        }
         String logFilePath = getLogFilePath(agentJarPath, projectCode);
         if (logFilePath == null) {
             return;
@@ -34,10 +37,28 @@ public class FileCache {
     }
 
     public static String getLogFilePath(String agentJarPath, String projectCode) {
+        if (agentJarPath == null || projectCode == null) {
+            return null;
+        }
+        agentJarPath = agentJarPath.trim();
+        if (agentJarPath.startsWith("\"") && agentJarPath.endsWith("\"") && agentJarPath.length() >= 2) {
+            agentJarPath = agentJarPath.substring(1, agentJarPath.length() - 1);
+        }
         File agentJar = new File(agentJarPath);
         if (agentJar.exists()) {
-            String projectDir = agentJar.getParentFile().getParentFile().getAbsolutePath();
-            return String.format("%s/logs/%s.log", projectDir, projectCode);
+            File parent = agentJar.getParentFile();
+            if (parent == null) {
+                return null;
+            }
+            File grandParent = parent.getParentFile();
+            String projectDir = grandParent != null ? grandParent.getAbsolutePath() : parent.getAbsolutePath();
+            // 防止路径穿越攻击 (CWE-22)，仅保留合法的文件名字符
+            String safeProjectCode = projectCode.replaceAll("[^a-zA-Z0-9_.-]", "_");
+            File logsDir = new File(projectDir, "logs");
+            if (!logsDir.exists()) {
+                logsDir.mkdirs();
+            }
+            return new File(logsDir, safeProjectCode + ".log").getAbsolutePath();
         }
         return null;
     }

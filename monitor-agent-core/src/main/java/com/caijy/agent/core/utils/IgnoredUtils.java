@@ -9,19 +9,19 @@ import com.caijy.agent.core.constants.ClassFilterConstants;
 public class IgnoredUtils {
 
     public static boolean ignoredMethods(String methodName) {
-        if (ClassFilterConstants.MYBATIS_PLUS_IGNORED_METHODS.contains(methodName)) {
+        if (methodName == null || methodName.startsWith("$")) {
             return true;
         }
         if (ClassFilterConstants.JDK_IGNORED_METHODS.contains(methodName)) {
+            return true;
+        }
+        if (ClassFilterConstants.MYBATIS_PLUS_IGNORED_METHODS.contains(methodName)) {
             return true;
         }
         return false;
     }
 
     public static boolean ignoredSpecificSymbol(String methodName) {
-        if (methodName.startsWith("$")) {
-            return true;
-        }
-        return false;
+        return methodName != null && methodName.startsWith("$");
     }
 }

@@ -1,11 +1,10 @@
 plugins {
     id 'java'
-    id "com.github.johnrengelman.shadow" version "6.1.0"
+    id "com.gradleup.shadow" version "8.3.6"
 }
 
 group 'com.caijy.plugin'
 version "$rootProject.ext.plugin.version"
-sourceCompatibility = 1.8
 
 
 repositories {

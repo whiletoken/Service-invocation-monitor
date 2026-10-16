@@ -24,3 +24,7 @@ hs_err_pid*
 
 .gradle/
 .vscode/
+.intellijPlatform/
+dist/
+*/build/
+build/

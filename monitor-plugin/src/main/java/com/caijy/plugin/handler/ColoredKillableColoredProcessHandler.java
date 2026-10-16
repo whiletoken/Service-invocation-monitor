@@ -40,7 +40,7 @@ public class ColoredKillableColoredProcessHandler extends KillableColoredProcess
     }
 
     public ColoredKillableColoredProcessHandler(@NotNull Process process, String commandLine,
-        @NotNull Charset charset, @Nullable Set<? extends File> filesToDelete) {
+        @NotNull Charset charset, @Nullable Set<File> filesToDelete) {
         super(process, commandLine, charset, filesToDelete);
         setShouldKillProcessSoftly(true);
     }

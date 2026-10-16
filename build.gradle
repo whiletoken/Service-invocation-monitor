@@ -6,11 +6,14 @@ allprojects {
 
     apply plugin: 'idea'
     apply plugin: 'java'
-    sourceCompatibility = 1.8
+    java {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
 }
 
 //所有子项目的通用配置
-subprojects {
+subprojects { subproject ->
     //仓库地址
     repositories {
         mavenLocal()
@@ -24,10 +27,12 @@ subprojects {
         implementation rootProject.ext.dependencies["byte-buddy"]
         implementation rootProject.ext.dependencies["byte-buddy-agent"]
         implementation rootProject.ext.dependencies["slf4j"]
-        annotationProcessor rootProject.ext.dependencies["lombok"]
-        compileOnly rootProject.ext.dependencies["lombok"]
-        testAnnotationProcessor rootProject.ext.dependencies["lombok"]
-        testCompileOnly rootProject.ext.dependencies["lombok"]
+        if (subproject.name != 'monitor-plugin') {
+            annotationProcessor rootProject.ext.dependencies["lombok"]
+            compileOnly rootProject.ext.dependencies["lombok"]
+            testAnnotationProcessor rootProject.ext.dependencies["lombok"]
+            testCompileOnly rootProject.ext.dependencies["lombok"]
+        }
         // 单测
         testCompileOnly 'junit:junit:4.12'
     }

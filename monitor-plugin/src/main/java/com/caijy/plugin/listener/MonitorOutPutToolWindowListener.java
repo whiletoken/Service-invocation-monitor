@@ -4,7 +4,7 @@ import com.caijy.plugin.ui.MonitorOutputToolWindow;
 import com.caijy.plugin.utils.PluginUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindowManager;
-import com.intellij.openapi.wm.ToolWindowManagerListener;
+import com.intellij.openapi.wm.ex.ToolWindowManagerListener;
 import org.jetbrains.annotations.NotNull;
 
 /**

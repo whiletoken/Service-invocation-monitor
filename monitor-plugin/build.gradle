@@ -40,12 +40,63 @@ intellijPlatform {
         token = providers.environmentVariable("pluginToken")
     }
     buildSearchableOptions = false
+    instrumentCode = false
 }
 
 tasks.named('runIde') {
     jvmArgs '--add-exports', 'java.base/jdk.internal.vm=ALL-UNNAMED'
 }
 
-tasks.register('packIdeaPlugin', Copy) {
+def agentProject = project(':monitor-agent')
+def bytecodePluginProjects = [
+    project(':dubbo-3.x-plugin'),
+    project(':jdk-thread-plugin'),
+    project(':mvc-annotation-plugin'),
+    project(':spring5-annotation-plugin')
+]
+
+tasks.withType(org.jetbrains.intellij.platform.gradle.tasks.PrepareSandboxTask).configureEach {
+    dependsOn(agentProject.tasks.named('shadowJar'))
+    bytecodePluginProjects.each { p ->
+        dependsOn(p.tasks.named('jar'))
+    }
+
+    from(agentProject.layout.buildDirectory.dir('libs')) {
+        include '*-all.jar'
+        into("${pluginName.get()}/lib")
+    }
+
+    bytecodePluginProjects.each { p ->
+        from(p.layout.buildDirectory.dir('libs')) {
+            include '*.jar'
+            exclude '*-javadoc.jar', '*-sources.jar'
+            into("${pluginName.get()}/lib/plugins")
+        }
+    }
+}
+
+tasks.register('packagePlugin', Copy) {
+    group = 'distribution'
+    description = 'Packages the IDEA plugin and copies the ZIP distribution to root dist/ directory'
     dependsOn tasks.named('buildPlugin')
+
+    from(layout.buildDirectory.dir('distributions')) {
+        include '*.zip'
+    }
+    into(rootProject.layout.projectDirectory.dir('dist'))
+
+    doLast {
+        def distDir = rootProject.file('dist')
+        println "\n" + "=" * 60
+        println " [SUCCESS] IDEA Plugin packaged successfully!"
+        distDir.eachFileMatch(~/.*\.zip/) { file ->
+            println " Artifact: ${file.absolutePath}"
+            println " Size:     ${String.format('%.2f MB', file.length() / (1024.0 * 1024.0))} (${file.length()} bytes)"
+        }
+        println "=" * 60 + "\n"
+    }
+}
+
+tasks.register('packIdeaPlugin') {
+    dependsOn tasks.named('packagePlugin')
 }

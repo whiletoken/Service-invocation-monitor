@@ -1,4 +1,4 @@
-﻿package com.caijy.plugin.utils;
+package com.caijy.plugin.utils;
 
 import java.util.ArrayList;
 import java.util.List;

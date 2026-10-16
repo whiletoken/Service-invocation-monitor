@@ -4,6 +4,32 @@
 
 ---
 
+## [V20261017] - 2026-10-17
+
+针对调用链追踪交互与展示结果进行重要用户体验优化：
+
+### 🔍 Stack Trace 增加高亮搜索与导航功能 (Stack Trace Search & Navigation)
+
+1. **集成控制台交互式搜索栏 (`MonitorConsolePanel`)**
+   - **交互搜索栏**：在 Monitor 工具窗口顶部集成搜索栏，配备原生风格 `SearchTextField` 输入框、匹配计数器（`X of Y` 或 `0 matches`）、上一个匹配（`↑` / `Shift+Enter`）、下一个匹配（`↓` / `Enter`）及关闭搜索按钮（`Esc`）。
+   - **实时高亮与滚动定位**：输入关键字即时计算所有匹配偏移量，通过 Editor `MarkupModel` 渲染搜索高亮 (`SEARCH_RESULT_ATTRIBUTES`)，并自动滚动与定位当前匹配项。
+   - **快捷键全面支持**：注册原生 `Ctrl+F`（macOS 为 `Cmd+F`）全局快捷键，随时一键唤醒搜索栏；按 `Esc` 键退出搜索并自动回退焦点到控制台。
+   - **全新操作侧边栏 (ActionToolbar)**：在控制台左侧集成原生垂直工具栏，提供“查找调用链 (Ctrl+F)”、“重新加载全部日志”、“清空控制台”、“自动滚动到底部”及“自动换行”等常用快捷工具。
+
+---
+
+### 🛡️ 屏蔽 Java 类信息的输出 (Suppress Java Class Output)
+
+1. **全链路多层级屏蔽 Java 系统运行时类**
+   - **背景**：在多线程、异步任务（如 `FutureTask`、`Executors$RunnableAdapter`、`CompletableFuture`）以及常见继承场景下，调用栈中充斥大量 JDK 内部类（如 `java.util.concurrent.*`），严重干扰业务开发人员对核心服务调用链的聚焦。
+   - **输出层过滤与子链路平滑提升 (`TrackManager`)**：在格式化与输出调用树时，自动识别并屏蔽以 `java.`、`javax.`、`sun.`、`com.sun.`、`jdk.` 开头的系统类信息；对于其包含的业务子调用链，自动向上平滑提升至当前缩进层级，既剔除了 JDK 底层包装类的冗余干扰，又确保了业务链路的完整连贯与结构整洁。
+   - **拦截层防御与字节码忽略 (`IgnoredUtils` / `InstrumentMethodInterceptor` / `TraceAgent`)**：
+     - 在字节码拦截入口（`InstrumentMethodInterceptor` 与 `InstrumentInterceptor`）增加类与方法声明类判定，跳过对 Java 核心类及其基类（如 `java.lang.Object`）方法的监控。
+     - 在 AgentBuilder 中增加对 `java.*`、`javax.*`、`sun.*`、`com.sun.*`、`jdk.*` 包前缀的显式忽略配置，彻底避免对底层类进行不必要的插桩与性能开销。
+   - **日志渲染防御 (`PluginUtil`)**：在从磁盘增量加载历史日志行时提供双重安全过滤，彻底杜绝历史日志中残留的 JDK 线程包装类显示。
+
+---
+
 ## [V20261016] - 2026-10-16
 
 结合最新版本 IntelliJ IDEA（2023.x / 2024.x / 2025.x）及现代 Java 生态（JDK 17 / JDK 21+）进行全面的性能优化、安全加固及兼容性重构。

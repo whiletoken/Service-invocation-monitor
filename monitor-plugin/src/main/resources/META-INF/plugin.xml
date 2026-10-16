@@ -15,6 +15,13 @@
         ]]></description>
 
     <change-notes><![CDATA[
+        <h3>V20261017</h3>
+        <ul>
+            <li>Feature: Added stack trace search & highlight navigation bar (Ctrl+F) with occurrence counter and ActionToolbar in Monitor ToolWindow</li>
+            <li>Feature: Filtered and suppressed Java standard runtime classes (java.*, javax.*, sun.*, jdk.*) from trace outputs with smooth child span promotion</li>
+            <li>Feature: Enhanced bytecode interceptor boundaries and AgentBuilder ignore rules to skip Java standard classes</li>
+        </ul>
+
         <h3>V20261016 (Latest Optimization & Modern Platform Upgrade)</h3>
         <ul>
             <li>Build System: Upgraded to modern IntelliJ Platform Gradle Plugin 2.x (org.jetbrains.intellij.platform 2.19.0) with official 2026.2.3 SDK</li>

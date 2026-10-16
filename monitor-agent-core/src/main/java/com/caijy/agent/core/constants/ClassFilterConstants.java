@@ -11,11 +11,15 @@ import java.util.Set;
  */
 public interface ClassFilterConstants {
 
+    Set<String> JAVA_PACKAGE_PREFIXES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+        "java.", "javax.", "sun.", "com.sun.", "jdk."
+    )));
+
     Set<String> MYBATIS_PLUS_IGNORED_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
         "getBaseMapper", "lambdaUpdate", "lambdaQuery"
     )));
 
     Set<String> JDK_IGNORED_METHODS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-        "toString", "hashCode", "equals", "getClass", "clone", "notify", "notifyAll", "wait"
+        "toString", "hashCode", "equals", "getClass", "clone", "notify", "notifyAll", "wait", "finalize"
     )));
 }

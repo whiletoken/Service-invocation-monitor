@@ -230,12 +230,42 @@ public class PluginUtil {
                     if (project.isDisposed()) {
                         return;
                     }
+                    int skipTokens = 0;
                     for (TraceConsoleDTO dto : dtoList) {
+                        if (skipTokens > 0) {
+                            skipTokens--;
+                            continue;
+                        }
+                        if (isJavaClassLog(dto.getText())) {
+                            skipTokens = 2;
+                            continue;
+                        }
                         printConsole(consoleView, dto);
                     }
+                    MonitorOutputToolWindow.onLogUpdated(project);
                 }, ModalityState.defaultModalityState());
             }
         });
+    }
+
+    /**
+     * 判断日志文本是否包含 Java 系统类调用（如 java.*, javax.*, sun.*, com.sun.*, jdk.*）
+     */
+    private static boolean isJavaClassLog(String text) {
+        if (text == null) {
+            return false;
+        }
+        int start = text.indexOf("【");
+        int end = text.indexOf("】");
+        if (start != -1 && end != -1 && end > start) {
+            String afterTag = text.substring(end + 1).trim();
+            return afterTag.startsWith("java.")
+                    || afterTag.startsWith("javax.")
+                    || afterTag.startsWith("sun.")
+                    || afterTag.startsWith("com.sun.")
+                    || afterTag.startsWith("jdk.");
+        }
+        return false;
     }
 
     public static void showAllConsoleLog(Project project) {

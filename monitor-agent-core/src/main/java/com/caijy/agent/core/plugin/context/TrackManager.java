@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Stack;
 
 import cn.hutool.core.collection.CollectionUtil;
+import com.caijy.agent.core.command.Commandinitializer;
 import com.caijy.agent.core.config.Config;
 import com.caijy.agent.core.console.TraceConsoleDTO;
 import com.caijy.agent.core.constants.AgentConstant;
@@ -12,6 +13,7 @@ import com.caijy.agent.core.enums.ConsoleColorEnum;
 import com.caijy.agent.core.model.TraceSegment;
 import com.caijy.agent.core.utils.ConfigBanner;
 import com.caijy.agent.core.utils.FileCache;
+import com.caijy.agent.core.utils.IgnoredUtils;
 import com.caijy.agent.core.utils.TraceSegmentBuilder;
 import com.google.common.collect.Lists;
 
@@ -66,7 +68,10 @@ public class TrackManager {
             append(builder, traceSegment, consoleDTOList);
             String colorString = ConfigBanner.toColorString(ConsoleColorEnum.GREEN, builder);
             System.out.println(colorString);
-            int sampleRate = Integer.valueOf(Config.get(AgentConstant.MONITOR_SAMPLE_RATE).toString());
+            Object sampleRateObj = Config.get(AgentConstant.MONITOR_SAMPLE_RATE);
+            int sampleRate = sampleRateObj != null
+                    ? Integer.parseInt(sampleRateObj.toString())
+                    : Commandinitializer.DEFAULT_VALUE_SAMPLE_RATE;
             Object path = Config.get(AgentConstant.MONITOR_AGENT_PATH);
             if (path != null) {
                 if (consoleDTOList.size() <= sampleRate) {
@@ -91,22 +96,34 @@ public class TrackManager {
 
     private static void appendChild(StringBuilder builder, List<TraceSegment> segments,
                                     List<TraceConsoleDTO> consoleDTOList) {
+        appendChild(builder, segments, consoleDTOList, 1);
+    }
+
+    private static void appendChild(StringBuilder builder, List<TraceSegment> segments,
+                                    List<TraceConsoleDTO> consoleDTOList, int currentDepth) {
         if (CollectionUtil.isNotEmpty(segments)) {
-            Long timeCostThreshold = Long.valueOf(
-                    Config.get(AgentConstant.MONITOR_TIME_COST_THRESHOLD).toString());
+            Object thresholdObj = Config.get(AgentConstant.MONITOR_TIME_COST_THRESHOLD);
+            Long timeCostThreshold = thresholdObj != null
+                    ? Long.parseLong(thresholdObj.toString())
+                    : (long) Commandinitializer.DEFAULT_VALUE_TIME_COST_THRESHOLD;
             for (TraceSegment traceSegment : segments) {
-                String preText = "";
-                for (int i = 0; i < traceSegment.getDepth(); i++) {
-                    builder.append("    ");
-                    preText += "    ";
+                // 屏蔽Java系统类信息的输出，直接将其子调用链递归输出在当前层级
+                if (IgnoredUtils.isJavaClass(traceSegment.getMethodName())) {
+                    appendChild(builder, traceSegment.getChildren(), consoleDTOList, currentDepth);
+                    continue;
                 }
-                String format = String.format("|--- 【%s】%s %s\n", traceSegment.getComponentName(),
+                StringBuilder indent = new StringBuilder();
+                for (int i = 0; i < currentDepth; i++) {
+                    indent.append("    ");
+                }
+                String indentStr = indent.toString();
+                String format = String.format("%s|--- 【%s】%s %s\n", indentStr, traceSegment.getComponentName(),
                         traceSegment.getMethodName(),
                         getTimedStr(timeCostThreshold, traceSegment));
                 builder.append(format);
 
                 // 用于日志文件
-                preText += String.format("|--- 【%s】%s [", traceSegment.getComponentName(),
+                String preText = indentStr + String.format("|--- 【%s】%s [", traceSegment.getComponentName(),
                         traceSegment.getMethodName());
                 if (traceSegment.getCostTime() == null) {
                     String midText = "";
@@ -124,7 +141,7 @@ public class TrackManager {
                     consoleDTOList.add(new TraceConsoleDTO(midColor, midText));
                     consoleDTOList.add(new TraceConsoleDTO(null, tailText));
                 }
-                appendChild(builder, traceSegment.getChildren(), consoleDTOList);
+                appendChild(builder, traceSegment.getChildren(), consoleDTOList, currentDepth + 1);
             }
         }
     }
@@ -146,7 +163,7 @@ public class TrackManager {
                         .toColorString(ConsoleColorEnum.CYAN, "|--- " + traceSegment.getMethodName(), "---|") + "\n");
         consoleDTOList.add(
                 new TraceConsoleDTO(AgentConstant.CONSOLE_COLOR_CYAN, "|--- " + traceSegment.getMethodName() + "---|\n"));
-        appendChild(builder, traceSegment.getChildren(), consoleDTOList);
+        appendChild(builder, traceSegment.getChildren(), consoleDTOList, 1);
     }
 
     public static String getCurrentSpan() {

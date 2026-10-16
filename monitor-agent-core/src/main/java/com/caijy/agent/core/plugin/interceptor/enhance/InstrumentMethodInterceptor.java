@@ -30,6 +30,10 @@ public class InstrumentMethodInterceptor {
             return callable.call();
         }
 
+        if (IgnoredUtils.isJavaClass(clazz.getName()) || (method.getDeclaringClass() != null && IgnoredUtils.isJavaClass(method.getDeclaringClass().getName()))) {
+            return callable.call();
+        }
+
         if (interceptor.isInvalid(obj, clazz, method, allArguments, method.getParameterTypes())) {
             return callable.call();
         }

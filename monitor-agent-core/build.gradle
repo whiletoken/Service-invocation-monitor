@@ -14,6 +14,7 @@ dependencies {
     implementation rootProject.ext.dependencies["guava"]
     implementation rootProject.ext.dependencies["byte-buddy"]
     implementation rootProject.ext.dependencies["byte-buddy-agent"]
+    testImplementation rootProject.ext.dependencies["junit"]
 }
 
 

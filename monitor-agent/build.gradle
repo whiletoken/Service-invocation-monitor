@@ -17,6 +17,7 @@ repositories {
 dependencies {
     implementation project(":monitor-agent-core")
     compileOnly rootProject.ext.dependencies["apache-dubbo"]
+    testImplementation rootProject.ext.dependencies["junit"]
 }
 
 

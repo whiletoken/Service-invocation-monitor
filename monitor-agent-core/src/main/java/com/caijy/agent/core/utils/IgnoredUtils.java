@@ -24,4 +24,22 @@ public class IgnoredUtils {
     public static boolean ignoredSpecificSymbol(String methodName) {
         return methodName != null && methodName.startsWith("$");
     }
+
+    /**
+     * 判断类名或全方法名是否属于Java系统类（如 java.*, javax.*, sun.*, com.sun.*, jdk.*）
+     *
+     * @param classNameOrMethod 类名或带包名的方法名
+     * @return true表示属于Java系统类
+     */
+    public static boolean isJavaClass(String classNameOrMethod) {
+        if (classNameOrMethod == null || classNameOrMethod.isEmpty()) {
+            return false;
+        }
+        for (String prefix : ClassFilterConstants.JAVA_PACKAGE_PREFIXES) {
+            if (classNameOrMethod.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

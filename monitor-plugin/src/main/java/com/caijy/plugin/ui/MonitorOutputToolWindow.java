@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class MonitorOutputToolWindow implements ToolWindowFactory, DumbAware {
     private static final Map<Project, ConsoleView> consoleViews = new ConcurrentHashMap<>();
+    private static final Map<Project, MonitorConsolePanel> consolePanels = new ConcurrentHashMap<>();
 
     public static final String ID = "Monitor";
 
@@ -51,7 +52,27 @@ public class MonitorOutputToolWindow implements ToolWindowFactory, DumbAware {
         return consoleView;
     }
 
-    // 设置工具栏窗口显示的 UI 为控制台窗口视图
+    public static MonitorConsolePanel getConsolePanel(Project project) {
+        if (project == null || project.isDisposed()) {
+            return null;
+        }
+        return consolePanels.get(project);
+    }
+
+    /**
+     * 日志增量刷新后触发检索高亮同步
+     */
+    public static void onLogUpdated(Project project) {
+        if (project == null || project.isDisposed()) {
+            return;
+        }
+        MonitorConsolePanel panel = consolePanels.get(project);
+        if (panel != null) {
+            panel.onLogUpdated();
+        }
+    }
+
+    // 设置工具栏窗口显示的 UI 为控制台窗口视图，并集成搜索与侧边操作栏
     private static synchronized ConsoleView createToolWindow(Project project, ToolWindow toolWindow) {
         ConsoleView existing = consoleViews.get(project);
         if (existing != null) {
@@ -61,14 +82,18 @@ public class MonitorOutputToolWindow implements ToolWindowFactory, DumbAware {
         ConsoleView consoleView = builder.getConsole();
         consoleViews.put(project, consoleView);
 
-        // 注册到项目生命周期，当 Project 关闭时自动释放 ConsoleView，防止 IDEA 报告 Project 内存泄露
+        MonitorConsolePanel consolePanel = new MonitorConsolePanel(project, consoleView);
+        consolePanels.put(project, consolePanel);
+
+        // 注册到项目生命周期，当 Project 关闭时自动释放 ConsolePanel 与 ConsoleView，防止 IDEA 报告 Project 内存泄露
         Disposer.register(project, () -> {
             consoleViews.remove(project);
-            Disposer.dispose(consoleView);
+            consolePanels.remove(project);
+            Disposer.dispose(consolePanel);
         });
 
         ContentFactory contentFactory = ContentFactory.getInstance();
-        Content content = contentFactory.createContent(consoleView.getComponent(),
+        Content content = contentFactory.createContent(consolePanel,
             "Monitor Console Output", false);
         content.getComponent().setVisible(true);
         content.setCloseable(false);

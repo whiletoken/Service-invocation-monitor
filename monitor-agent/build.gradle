@@ -40,11 +40,10 @@ shadowJar {
     }
 }
 
-// 移动agent包到plugin包下
-task packAgent(type: Copy, dependsOn: shadowJar) {
-    sourceSets.main.resources.srcDirs.each {
-        from "$buildDir/libs"
-        into "$buildDir/../../$rootProject.ext.plugin.agentTargetJarModule/build/idea-sandbox/plugins/$rootProject.ext.plugin.agentTargetJarModule/lib"
-    }
+// 兼容旧版打包任务（现由 PrepareSandboxTask 自动集成）
+tasks.register('packAgent', Copy) {
+    dependsOn tasks.named('shadowJar')
+    from layout.buildDirectory.dir('libs')
+    into project(":${rootProject.ext.plugin.agentTargetJarModule}").layout.buildDirectory.dir("idea-sandbox/plugins/${rootProject.ext.plugin.agentTargetJarModule}/lib")
 }
 

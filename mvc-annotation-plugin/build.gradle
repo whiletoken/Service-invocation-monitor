@@ -23,9 +23,8 @@ tasks.withType(Javadoc) {
     options.encoding = 'UTF-8'
 }
 
-task packPlugin(type: Copy, dependsOn: build) {
-    sourceSets.main.resources.srcDirs.each {
-        from "build/libs"
-        into "../$rootProject.ext.plugin.pluginTargetJarModule/build/libs/plugins"
-    }
+tasks.register('packPlugin', Copy) {
+    dependsOn tasks.named('jar')
+    from layout.buildDirectory.dir('libs')
+    into project(":${rootProject.ext.plugin.agentTargetJarModule}").layout.buildDirectory.dir('idea-sandbox/plugins/monitor-plugin/lib/plugins')
 }

@@ -55,9 +55,10 @@ description: >-
 2. **清单与配置优先**：
    - 遇到平台扩展、组件加载问题，先读 [plugin.xml](file:///c:/Users/liuju/Documents/GitHub/Service-invocation-monitor/monitor-plugin/src/main/resources/META-INF/plugin.xml) 中的 `<extensions>`、`<actions>` 或 [build.gradle](file:///c:/Users/liuju/Documents/GitHub/Service-invocation-monitor/build.gradle) 中的依赖声明，而非猜测各个 Class 的注入方式。
 
-3. **版本日志与 Git 提交优先**：
+3. **版本日志（CHANGELOG）优先，Git 提交按需降级**：
    - 优先查阅 [CHANGELOG.md](file:///c:/Users/liuju/Documents/GitHub/Service-invocation-monitor/CHANGELOG.md) 查看最近版本解决的缺陷（如 O(N^2) 复杂度优化、内存泄露修复）。
-   - 善用 `git log -S <symbol> --oneline` 或 `git log -L <start>,<end>:<file>` 探查目标代码块的最后一次修改原因。
+   - **严禁无意义盲读 Git**：在需求明确、已有文档覆盖或常规功能与构建优化中，**坚决不执行** `git log` / `git show`，杜绝上下文污染与 Token 浪费。
+   - **仅在极端疑难场景降级使用**：只有在代码出现严重歧义、注释与文档完全缺失、且需要定位历史特定 Bug 是哪次提交引入时，才针对唯一特定符号执行精确定向查询（如 `git log -S <symbol> -n 3 --oneline`）。
 
 ---
 

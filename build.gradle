@@ -4,6 +4,14 @@ allprojects {
     group 'com.caijy.plugin'
     version '1.0'
 
+    // 统一将所有模块的构建输出收拢至项目最外层根目录 build/ 下，并按工程层级分类存放
+    def buildSubPath = project == rootProject ? 'root' : (
+        project.name.endsWith('-plugin') && project.name != 'monitor-plugin'
+            ? "plugins/${project.name}"
+            : (project.name.startsWith('monitor-agent') ? "agent/${project.name}" : project.name)
+    )
+    layout.buildDirectory.set(rootProject.layout.projectDirectory.dir("build/${buildSubPath}"))
+
     apply plugin: 'idea'
     apply plugin: 'java'
     java {
@@ -11,6 +19,12 @@ allprojects {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 }
+
+// 根工程 clean 任务：清理最外层统一构建输出目录 build/
+tasks.named('clean') {
+    delete rootProject.layout.projectDirectory.dir('build')
+}
+
 
 //所有子项目的通用配置
 subprojects { subproject ->

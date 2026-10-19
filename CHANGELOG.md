@@ -4,6 +4,25 @@
 
 ---
 
+## [V20261019] - 2026-10-19
+
+### 🏗️ 构建脚本优化与构建产物收敛管理 (Centralized & Hierarchical Build Outputs)
+
+1. **统一收敛所有模块 `build/` 目录至根工程**：
+   - 彻底解决各子模块散落生成 `build` 文件夹造成的目录杂乱与版本管理干扰。
+   - 在根工程 [build.gradle](file:///c:/Users/liuju/Documents/GitHub/Service-invocation-monitor/build.gradle) 中通过 `layout.buildDirectory` 进行集中分类管理：
+     - `build/agent/`：收拢 `monitor-agent` 与 `monitor-agent-core` 的构建与 Jar 产物；
+     - `build/plugins/`：收拢 `dubbo-3.x-plugin`、`jdk-thread-plugin`、`mvc-annotation-plugin`、`spring5-annotation-plugin` 的字节码插桩 Jar；
+     - `build/monitor-plugin/`：收拢 IntelliJ IDEA 插件主工程的沙箱、类文件与 distributions 产物；
+     - `build/root/`：根工程报告与临时任务输出。
+2. **构建任务与清理机制现代化适配**：
+   - 现代化重构子模块遗留的 `packAgent` 与 `packPlugin` 复制任务，移除硬编码路径，全量对接 `layout.buildDirectory` API。
+   - 根工程强化 `clean` 任务，支持一键安全清理最外层统一 `build/` 目录。
+3. **建立工作区永久规范体系**：
+   - 在项目根目录创建标准 [AGENTS.md](file:///c:/Users/liuju/Documents/GitHub/Service-invocation-monitor/AGENTS.md)，将精准行切片（50~100行）、由点到面（Point-to-Surface）渐进式分析与技术文档优先原则确立为 Always-on 系统级硬性前置规范。
+
+---
+
 ## [V20261017] - 2026-10-17
 
 针对调用链追踪交互与展示结果进行重要用户体验优化：
